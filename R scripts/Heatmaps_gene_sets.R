@@ -98,7 +98,7 @@ combined_mat <- do.call(rbind, all_gene_sets)
 
 ht_combined <- Heatmap(
   combined_mat,
-  name = "r-log",
+  name = "z-score",
   show_row_names = TRUE, 
   show_column_names = TRUE, 
   cluster_columns = FALSE, 
