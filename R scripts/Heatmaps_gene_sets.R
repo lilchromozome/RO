@@ -115,6 +115,7 @@ make_heatmap <- function(mat_scaled, genes, title){
     cluster_rows = FALSE,
     cluster_row_slices = FALSE,
     row_split = factor(slice_labels, levels = celltypes),
+    # row_title = NULL,
     row_title_rot = 0,
     row_gap = unit(2, "mm"),
     row_names_gp = gpar(fontsize = 8),
