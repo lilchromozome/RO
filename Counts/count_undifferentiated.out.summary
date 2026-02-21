@@ -1,0 +1,15 @@
+Status	E5C3_E8_Aligned.sortedByCoord.out.bam	E5C3_L3i_Aligned.sortedByCoord.out.bam	H9_E8_Aligned.sortedByCoord.out.bam	H9_L3i_Aligned.sortedByCoord.out.bam	RUES02_E8_Aligned.sortedByCoord.out.bam	RUES02_L3i_Aligned.sortedByCoord.out.bam
+Assigned	53292577	65587510	77985339	62330070	45056895	54359392
+Unassigned_Unmapped	0	0	0	0	0	0
+Unassigned_Read_Type	0	0	0	0	0	0
+Unassigned_Singleton	0	0	0	0	0	0
+Unassigned_MappingQuality	0	0	0	0	0	0
+Unassigned_Chimera	0	0	0	0	0	0
+Unassigned_FragmentLength	0	0	0	0	0	0
+Unassigned_Duplicate	0	0	0	0	0	0
+Unassigned_MultiMapping	15314602	18707272	19810674	15747956	12309488	13416352
+Unassigned_Secondary	0	0	0	0	0	0
+Unassigned_NonSplit	0	0	0	0	0	0
+Unassigned_NoFeatures	4481405	8135220	5959788	5071265	3026097	5386852
+Unassigned_Overlapping_Length	0	0	0	0	0	0
+Unassigned_Ambiguity	4554570	5751400	6802647	5641895	3961698	4597124
