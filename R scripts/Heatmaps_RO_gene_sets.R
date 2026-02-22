@@ -6,9 +6,10 @@ library(org.Hs.eg.db)
 library(AnnotationDbi)
 library(patchwork)
 library(ggExtra)
+setwd("C:/Users/willllllli/Documents/Dr. Z lab/RNA seq/RO") # Windows
+# setwd("~/Documents/Zambidis lab/RNAseq/RO") # MAC
 
-# RO_full <- read.table("C:/Users/willllllli/Documents/Dr. Z lab/RNA seq/RO/Counts/count.out", # Windows
-RO_full <- read.table("~/Documents/Zambidis lab/RNAseq/RO/Counts/count.out",
+RO_full <- read.table("Counts/count.out",
                      header = T,
                      sep = "\t",
                      comment.char = "#",
@@ -31,8 +32,8 @@ RO_counts$gene_symbol <- symbols
 rownames(RO_counts) <- make.unique(ifelse(is.na(symbols), ens, symbols))
 RO_counts$gene_symbol <- NULL
 
-undiff_genes <- read.csv("~/Documents/Zambidis lab/RNAseq/RO/Retinal_progenitor_genes.csv") # MAC
-diff_genes <- read.csv("~/Documents/Zambidis lab/RNAseq/RO/Retinal_differentiated_genes.csv") # MAC
+undiff_genes <- read.csv("Retinal_progenitor_genes.csv")
+diff_genes <- read.csv("Retinal_differentiated_genes.csv")
 
 undiff_cell_types <- unique(gsub("\\.(Liu|Dorgau)$", "", names(diff_genes)))
 
@@ -108,6 +109,7 @@ make_heatmap <- function(mat_scaled, rlog, genes, title=""){
       E8_mean  = rowMeans(sub[, E8_cols]),
       L3i_mean = rowMeans(sub[, L3i_cols])
     )
+    
     heatmap_rlog <- sub_rlog
     
     gene_ord <- order(heatmap_mat[, 'L3i_mean'], decreasing = TRUE)
@@ -174,7 +176,3 @@ undiff_ht_rlog <- result_undiff$ht_combined_rlog
 result_diff <- make_heatmap(mat_scaled, rlog, diff_genes, "Differentiated Cell Types")
 diff_ht <- result_diff$ht_combined
 diff_ht_rlog <- result_diff$ht_combined_rlog
-
-
-
-

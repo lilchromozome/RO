@@ -6,9 +6,10 @@ library(org.Hs.eg.db)
 library(AnnotationDbi)
 library(patchwork)
 library(ggExtra)
+setwd("C:/Users/willllllli/Documents/Dr. Z lab/RNA seq/RO") # Windows
+# setwd("~/Documents/Zambidis lab/RNAseq/RO") # MAC
 
-# RO_full <- read.table("C:/Users/willllllli/Documents/Dr. Z lab/RNA seq/RO/Counts/count.out", # Windows
-RO_full <- read.table("~/Documents/Zambidis lab/RNAseq/RO/Counts/count.out",
+RO_full <- read.table("Counts/count.out",
                       header = T,
                       sep = "\t",
                       comment.char = "#",
@@ -31,8 +32,8 @@ RO_counts$gene_symbol <- symbols
 rownames(RO_counts) <- make.unique(ifelse(is.na(symbols), ens, symbols))
 RO_counts$gene_symbol <- NULL
 
-undiff_genes <- read.csv("~/Documents/Zambidis lab/RNAseq/RO/Retinal_progenitor_genes.csv") # MAC
-diff_genes <- read.csv("~/Documents/Zambidis lab/RNAseq/RO/Retinal_differentiated_genes.csv") # MAC
+undiff_genes <- read.csv("Retinal_progenitor_genes.csv")
+diff_genes <- read.csv("Retinal_differentiated_genes.csv")
 
 undiff_cell_types <- unique(gsub("\\.(Liu|Dorgau)$", "", names(diff_genes)))
 
@@ -122,11 +123,10 @@ make_box_celllinezscore <- function(mat_scaled, genes, order = "fwd", title = ""
     celltype_order <- rev(celltype_order)
   }
   
-  # Reorder the factor
+  # Reorder 
   boxplot_df$celltype <- factor(boxplot_df$celltype, levels = celltype_order)
   boxplot_df$condition <- factor(boxplot_df$condition, levels = c("L3i", "E8"))
   
-  # Then plot as before
   ggplot(boxplot_df, aes(x = condition, y = zscore, fill = condition)) +
     geom_boxplot(alpha = 0.5) +
     geom_jitter(aes(shape = cellline), width = 0.15, size = 2) +
@@ -249,4 +249,8 @@ make_box_avgzscore(mat_scaled, diff_genes, title = "Differentiated Cell Types")
 
 make_box_celllinezscore(mat_scaled, undiff_genes, title = "Undifferentiated Cell Types")
 make_box_celllinezscore(mat_scaled, diff_genes, title = "Differentiated Cell Types")
+
+log_mat <- log10(mat)
+make_box_celllinezscore(log_mat, undiff_genes, title = "Undifferentiated Cell Types")
+make_box_celllinezscore(log_mat, diff_genes, title = "Differentiated Cell Types")
 
