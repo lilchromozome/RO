@@ -1,0 +1,15 @@
+Status	H9_E8_RO_001_Aligned.sortedByCoord.out.bam	H9_E8_RO_002_Aligned.sortedByCoord.out.bam	H9_L3i_RO_001_Aligned.sortedByCoord.out.bam	H9_L3i_RO_002_Aligned.sortedByCoord.out.bam	RUES02_E8_RO_003_Aligned.sortedByCoord.out.bam	RUES02_L3i_RO_003_Aligned.sortedByCoord.out.bam
+Assigned	137679247	139838601	110738611	122599600	193669313	155316913
+Unassigned_Unmapped	0	0	0	0	0	0
+Unassigned_Read_Type	0	0	0	0	0	0
+Unassigned_Singleton	0	0	0	0	0	0
+Unassigned_MappingQuality	0	0	0	0	0	0
+Unassigned_Chimera	0	0	0	0	0	0
+Unassigned_FragmentLength	0	0	0	0	0	0
+Unassigned_Duplicate	0	0	0	0	0	0
+Unassigned_MultiMapping	13971924	29075674	10870378	30839328	30454638	32504168
+Unassigned_Secondary	0	0	0	0	0	0
+Unassigned_NonSplit	0	0	0	0	0	0
+Unassigned_NoFeatures	7057336	6754778	9921115	4102685	8791520	5824733
+Unassigned_Overlapping_Length	0	0	0	0	0	0
+Unassigned_Ambiguity	16036026	14360095	12342276	12420547	18790439	15259756
