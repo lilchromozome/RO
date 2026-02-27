@@ -83,20 +83,45 @@ RO_mat_scaled <- t(scale(t(RO_mat)))
 RO_mat_scaled <- RO_mat_scaled[complete.cases(RO_mat_scaled), , drop = FALSE]
 
 ## Visualizations ----------------------------------
-source('/Users/willli/Documents/Zambidis lab/RNAseq/RO/R scripts/visualization_functions.R')
+source('R scripts/visualization_functions.R')
 
 make_heatmap(undiff_mat_scaled, undiff_rlog, undiff_genes, 
-             origin = "Undifferentiated", title="Undifferentiated Cell Types")
+             origin = "Undifferentiated", title="Stem-Progenitor Cell Types")
 make_heatmap(undiff_mat_scaled, undiff_rlog, diff_genes, 
              origin = "Undifferentiated", title="Differentiated Cell Types")
 
-make_heatmap(RO_mat_scaled, RO_rlog, undiff_genes, origin = "RO", title="Undifferentiated Cell Types")
+make_heatmap(RO_mat_scaled, RO_rlog, undiff_genes, origin = "RO", title="Stem-Progenitor Cell Types")
 make_heatmap(RO_mat_scaled, RO_rlog, diff_genes, origin = "RO", title="Differentiated Cell Types")
 
 cpm <- t(t(all / colSums(all))) * 1e6
 log_mat <- log10(cpm+1)
 mat_scaled <- t(scale(t(cpm)))
 mat_scaled[is.nan(mat_scaled)] <- 0
-make_heatmap_undiffAndROCounts(mat_scaled, undiff_genes, title = "Undifferentiated Cell Types")
+make_heatmap_undiffAndROCounts(mat_scaled, undiff_genes, title = "Stem-Progenitor Cell Types")
 make_heatmap_undiffAndROCounts(mat_scaled, diff_genes, title = "Differentiated Cell Types")
+
+
+
+make_box_celllinezscore(undiff_mat_scaled, undiff_genes, order = "", origin = "Undifferentiated", title = "Stem-Progenitor Cell Types")
+make_box_celllinezscore(RO_mat_scaled, undiff_genes, order = "", origin = "RO", title = "Stem-Progenitor Cell Types")
+
+make_box_celllinezscore(undiff_mat_scaled, diff_genes, order = "", origin = "Undifferentiated", title = "Differentiated Cell Types")
+make_box_celllinezscore(RO_mat_scaled, diff_genes, order = "", origin = "RO", title = "Differentiated Cell Types")
+
+
+
+
+make_box_avgzscore_sideByside(undiff_mat_scaled, undiff_genes, order = "", origin = "Undifferentiated", title = "Stem-Progenitor Cell Types")
+make_box_avgzscore_sideByside(RO_mat_scaled, undiff_genes, order = "", origin = "RO", title = "Stem-Progenitor Cell Types")
+
+make_box_avgzscore_sideByside(undiff_mat_scaled, diff_genes, order = "", origin = "Undifferentiated", title = "Differentiated Cell Types")
+make_box_avgzscore_sideByside(RO_mat_scaled, diff_genes, order = "", origin = "RO", title = "Differentiated Cell Types")
+
+
+
+
+
+
+
+
 

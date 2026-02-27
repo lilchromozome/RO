@@ -165,7 +165,6 @@ make_heatmap_undiffAndROCounts <- function(mat_scaled, genes, title = "") {
     column_title_gp = gpar(fontsize = 16, fontface = "bold")
   )
   
-  draw(ht_combined, show_heatmap_legend = TRUE)
   return(ht_combined)
 }
 
@@ -178,7 +177,7 @@ make_heatmap_undiffAndROCounts <- function(mat_scaled, genes, title = "") {
 #' @param title Character string for the plot title (default: `""`).
 #'
 #' @return A ggplot object. Faceted boxplots (one per cell type) with jittered points shaped by cell line.
-make_box_celllinezscore <- function(mat_scaled, genes, order = "fwd", origin = "", title = "") {
+make_box_celllinezscore <- function(mat_scaled, genes, order = "", origin = "", title = "") {
   cellline <- sub("_(E8|L3i)", "", colnames(mat_scaled))
   condition <- sub(".*_(E8|L3i).*", "\\1", colnames(mat_scaled))
   
@@ -211,13 +210,19 @@ make_box_celllinezscore <- function(mat_scaled, genes, order = "fwd", origin = "
     summarize(diff = mean(zscore[condition == "L3i"]) - mean(zscore[condition == "E8"])) %>%
     arrange(desc(diff)) %>%
     pull(celltype)
-  if(order == "rev"){
+
+  if (order == 'fwd'){
+    celltype_order <- celltype_order
+  }
+  else if (order == "rev") {
     celltype_order <- rev(celltype_order)
   }
+  else
+    celltype_order <- names(genes)
+  
   
   # Reorder 
   boxplot_df$celltype <- factor(boxplot_df$celltype, levels = celltype_order)
-  # boxplot_df$celltype <- factor(boxplot_df$celltype, levels = names(genes))
   boxplot_df$condition <- factor(boxplot_df$condition, levels = c("E8", "L3i"))
   
   ggplot(boxplot_df, aes(x = condition, y = zscore, fill = condition)) +
@@ -254,10 +259,66 @@ make_box_celllinezscore <- function(mat_scaled, genes, order = "fwd", origin = "
 #' @param mat_scaled Numeric matrix of z-scored expression values. Columns must contain `_E8` or `_L3i`.
 #' @param genes Named list of character vectors. Names = cell type labels, values = gene symbols.
 #' @param order `"fwd"` (default) sorts cell types by descending mean z-score; `"rev"` reverses.
+#' @param origin the tissue of origin, 'Undifferentiated' or 'RO'
 #' @param title Character string for the plot title (default: `""`).
 #'
-#' @return A ggplot object. One boxplot per cell type showing the mean L3i z-score for each gene.
-make_box_avgzscore <- function(mat_scaled, genes, order = "fwd", title = "") {
+#' @return A ggplot object. One boxplot per cell type showing the mean L3i z-scores for each gene.
+make_box_avgzscore <- function(mat_scaled, genes, order = "", origin = "", title = "") {
+  cellline <- sub("_(E8|L3i)", "", colnames(mat_scaled))
+  condition <- sub(".*_(E8|L3i).*", "\\1", colnames(mat_scaled))
+  celltypes <- names(genes)
+  boxplot_df_list <- list()
+  for (i in seq_along(celltypes)) {
+    celltype <- celltypes[i]
+    gene_set <- genes[[i]]
+    if (length(gene_set) == 0) next
+    sub <- mat_scaled[rownames(mat_scaled) %in% gene_set, , drop = FALSE]
+    L3i_cols <- which(condition == "L3i")
+    for (g in rownames(sub)) {
+      boxplot_df_list[[length(boxplot_df_list) + 1]] <- data.frame(
+        gene = g,
+        zscore = mean(sub[g, L3i_cols]),
+        celltype = celltype
+      )
+    }
+  }
+  boxplot_df <- do.call(rbind, boxplot_df_list)
+  celltype_order <- boxplot_df %>%
+    group_by(celltype) %>%
+    summarize(mean_z = mean(zscore)) %>%
+    arrange(desc(mean_z)) %>%
+    pull(celltype)
+  if (order == 'fwd') {
+    celltype_order <- celltype_order
+  } else if (order == "rev") {
+    celltype_order <- rev(celltype_order)
+  } else {
+    celltype_order <- names(genes)
+  }
+  boxplot_df$celltype <- factor(boxplot_df$celltype, levels = celltype_order)
+  ggplot(boxplot_df, aes(x = celltype, y = zscore, fill = celltype)) +
+    geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+    geom_jitter(width = 0.15, size = 2) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+    labs(x = NULL, y = paste0("Mean Z-Score (L3i", origin, ")"), title = title) +
+    theme_bw() +
+    removeGrid() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+      legend.position = "none"
+    )
+}
+
+#' Boxplot of Mean L3i AND E8 Z-Scores per Gene Across Cell Types
+#'
+#' @param mat_scaled Numeric matrix of z-scored expression values. Columns must contain `_E8` or `_L3i`.
+#' @param genes Named list of character vectors. Names = cell type labels, values = gene symbols.
+#' @param order `"fwd"` (default) sorts cell types by descending mean z-score; `"rev"` reverses.
+#' @param origin the tissue of origin, 'Undifferentiated' or 'RO'
+#' @param title Character string for the plot title (default: `""`).
+#'
+#' @return A ggplot object. 2 boxplots per cell type showing the mean L3i AND E8 z-scores for each gene.
+make_box_avgzscore_sideByside <- function(mat_scaled, genes, order = "", origin = "", title = "") {
   cellline <- sub("_(E8|L3i)", "", colnames(mat_scaled))
   condition <- sub(".*_(E8|L3i).*", "\\1", colnames(mat_scaled))
   
@@ -271,42 +332,69 @@ make_box_avgzscore <- function(mat_scaled, genes, order = "fwd", title = "") {
     sub <- mat_scaled[rownames(mat_scaled) %in% gene_set, , drop = FALSE]
     
     L3i_cols <- which(condition == "L3i")
+    E8_cols  <- which(condition == "E8")
     
     for (g in rownames(sub)) {
       boxplot_df_list[[length(boxplot_df_list) + 1]] <- data.frame(
         gene = g,
         zscore = mean(sub[g, L3i_cols]),
+        condition = "L3i",
+        celltype = celltype
+      )
+      boxplot_df_list[[length(boxplot_df_list) + 1]] <- data.frame(
+        gene = g,
+        zscore = mean(sub[g, E8_cols]),
+        condition = "E8",
         celltype = celltype
       )
     }
   }
   boxplot_df <- do.call(rbind, boxplot_df_list)
   
+  
   celltype_order <- boxplot_df %>%
+    filter(condition == "L3i") %>%
     group_by(celltype) %>%
     summarize(mean_z = mean(zscore)) %>%
     arrange(desc(mean_z)) %>%
     pull(celltype)
-  if (order == "rev") {
+  if (order == 'fwd'){
+    celltype_order <- celltype_order
+  }
+  else if (order == "rev") {
     celltype_order <- rev(celltype_order)
   }
+  else
+    celltype_order <- names(genes)
   
   boxplot_df$celltype <- factor(boxplot_df$celltype, levels = celltype_order)
+  boxplot_df$condition <- factor(boxplot_df$condition, levels = c("E8", "L3i"))
   
-  ggplot(boxplot_df, aes(x = celltype, y = zscore, fill = celltype)) +
+  ggplot(boxplot_df, aes(x = condition, y = zscore, fill = condition)) +
     geom_boxplot(alpha = 0.5, outlier.shape = NA) +
     geom_jitter(width = 0.15, size = 2) +
+    geom_signif(
+      comparisons = list(c("E8", "L3i")),
+      test = "wilcox.test",
+      test.args = list(alternative = "two.sided"),
+      map_signif_level = TRUE,               
+      textsize = 3
+    )+
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-    labs(x = NULL, y = "Mean Z-Score (L3i)", title = title) +
+    facet_wrap(~ celltype, nrow = 1, strip.position = "bottom") +
+    scale_fill_manual(values = c("E8" = "blue", "L3i" = "red"),
+                      labels = c("E8" = paste("E8", origin), "L3i" = paste("L3i", origin))) +
+    labs(x = NULL, y = "Mean Z-Score", fill = "Condition", title = title) +
     theme_bw() +
     removeGrid() +
     theme(
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
-      legend.position = "none"
+      strip.text = element_text(size = 10, face = "bold", angle = 90, hjust = 1),
+      strip.placement = "outside",
+      strip.background = element_blank(),
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank()
     )
 }
-
-
 
 #' Boxplot of Log2 Fold Changes (L3i/E8) by Cell Type
 #'
@@ -320,7 +408,7 @@ make_box_avgzscore <- function(mat_scaled, genes, order = "fwd", title = "") {
 #'     \item{$df}{Data frame with columns: gene, log2FC, celltype.}
 #'     \item{$plot}{A ggplot object. One boxplot per cell type with jittered gene-level points.}
 #'   }
-make_box_rlog <- function(res, genes, order = "fwd", title = "") {
+make_box_rlog <- function(res, genes, order = "", title = "") {
   celltypes <- names(genes)
   boxplot_df_list <- list()
   
@@ -344,9 +432,16 @@ make_box_rlog <- function(res, genes, order = "fwd", title = "") {
     summarize(diff = mean(log2FC)) %>%
     arrange(desc(diff)) %>%
     pull(celltype)
-  if(order == "rev"){
+
+  if (order == 'fwd'){
+    celltype_order <- celltype_order
+  }
+  else if (order == "rev") {
     celltype_order <- rev(celltype_order)
   }
+  else
+    celltype_order <- names(genes)
+  
   
   boxplot_df$celltype <- factor(boxplot_df$celltype, levels = celltype_order)
   

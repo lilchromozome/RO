@@ -6,8 +6,8 @@ library(org.Hs.eg.db)
 library(AnnotationDbi)
 library(patchwork)
 library(ggExtra)
-# setwd("C:/Users/willllllli/Documents/Dr. Z lab/RNA seq/RO") # Windows
-setwd("~/Documents/Zambidis lab/RNAseq/RO") # MAC
+setwd("C:/Users/willllllli/Documents/Dr. Z lab/RNA seq/RO") # Windows
+# setwd("~/Documents/Zambidis lab/RNAseq/RO") # MAC
 
 RO_full <- read.table("Counts/count.out",
                       header = T,
@@ -90,10 +90,14 @@ mat_scaled <- mat_scaled[complete.cases(mat_scaled), , drop = FALSE]
 source("R scripts/visualization_functions.R")
 
 make_box_rlog(res, undiff_genes, title = "Undifferentiated Cell Types")
-make_box_rlog(res, diff_genes, title = "Differentiated Cell Types")
+make_box_rlog(res, diff_genes, order = "rev", title = "Differentiated Cell Types")
 
-make_box_avgzscore(mat_scaled, undiff_genes, title = "Undifferentiated Cell Types Dorgau")
-make_box_avgzscore(mat_scaled, diff_genes, title = "Differentiated Cell Types Dorgau")
+
+make_box_avgzscore(mat_scaled, undiff_genes, origin = "RO", title = "Undifferentiated Cell Types Dorgau")
+make_box_avgzscore(mat_scaled, diff_genes, order = "fwd", origin = "RO", title = "Differentiated Cell Types Dorgau")
+
+make_box_avgzscore_sideByside(mat_scaled, undiff_genes,  origin = "RO", title = "Undifferentiated Cell Types Dorgau")
+make_box_avgzscore_sideByside(mat_scaled, diff_genes, order = "rev", origin = "RO", title = "Differentiated Cell Types Dorgau")
 
 
 make_box_celllinezscore(mat_scaled, undiff_genes, origin = "RO", title = "Undifferentiated Cell Types")
