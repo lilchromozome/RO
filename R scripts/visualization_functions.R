@@ -116,7 +116,7 @@ make_heatmap <- function(mat_scaled, rlog, genes, origin = "", title=""){
 #'     \item{$ht_combined_rlog} per-sample rlog values E8 and L3i.
 #'   }
 #'
-make_heatmap_undiffAndROCounts <- function(mat_scaled, genes, title = "") {
+make_heatmap_undiffAndROCounts <- function(mat_scaled, genes, stat = "", title = "") {
   all_gene_sets <- list()
   slice_labels <- c()
   celltypes <- names(genes)
@@ -148,7 +148,7 @@ make_heatmap_undiffAndROCounts <- function(mat_scaled, genes, title = "") {
   
   ht_combined <- Heatmap(
     combined_mat,
-    name = "Z-score",
+    name = stat,
     column_labels = c("E8", "L3i", "E8_RO", "L3i_RO"),
     show_row_names = TRUE,
     show_column_names = TRUE,
@@ -169,7 +169,7 @@ make_heatmap_undiffAndROCounts <- function(mat_scaled, genes, title = "") {
 }
 
 
-#' Boxplot of Z-Scores by Cell Type and Condition, Grouped by Cell Line
+#' Boxpslot of Z-Scores by Cell Type and Condition, Grouped by Cell Line
 #'
 #' @param mat_scaled Numeric matrix of z-scored expression values. Columns must contain `_E8` or `_L3i`.
 #' @param genes Named list of character vectors. Names = cell type labels, values = gene symbols.

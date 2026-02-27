@@ -13,8 +13,8 @@ undiff <- undiff[, c("E5C3_E8", "H9_E8", "RUES02_E8", "E5C3_L3i","H9_L3i",  "RUE
 RO <- read.delim("Counts/RO_counts_gene_symbol.csv", sep=",")
 rownames(RO) <- RO$X
 RO$X <- NULL
-colnames(RO) <- c("H9_E8_r1_RO", "H9_E8_r2_RO", "H9_L3i_r1_RO",  "H9_L3i_r2_RO", "RUES02_E8_RO", "RUES02_L3i")
-RO <- RO[, c("H9_E8_r1_RO", "H9_E8_r2_RO", "RUES02_E8_RO", "H9_L3i_r1_RO",  "H9_L3i_r2_RO",  "RUES02_L3i")]
+colnames(RO) <- c("H9_E8_r1_RO", "H9_E8_r2_RO", "H9_L3i_r1_RO",  "H9_L3i_r2_RO", "RUES02_E8_RO", "RUES02_L3i_RO")
+RO <- RO[, c("H9_E8_r1_RO", "H9_E8_r2_RO", "RUES02_E8_RO", "H9_L3i_r1_RO",  "H9_L3i_r2_RO",  "RUES02_L3i_RO")]
 
 all <- cbind(undiff,RO)
 
@@ -105,10 +105,8 @@ make_heatmap_undiffAndROCounts(mat_scaled, diff_genes, title = "Differentiated C
 make_box_celllinezscore(undiff_mat_scaled, undiff_genes, order = "", origin = "Undifferentiated", title = "Stem-Progenitor Cell Types")
 make_box_celllinezscore(RO_mat_scaled, undiff_genes, order = "", origin = "RO", title = "Stem-Progenitor Cell Types")
 
-make_box_celllinezscore(undiff_mat_scaled, diff_genes, order = "", origin = "Undifferentiated", title = "Differentiated Cell Types")
-make_box_celllinezscore(RO_mat_scaled, diff_genes, order = "", origin = "RO", title = "Differentiated Cell Types")
-
-
+make_box_celllinezscore(undiff_mat_scaled, diff_genes, order = "rev", origin = "Undifferentiated", title = "Differentiated Cell Types")
+make_box_celllinezscore(RO_mat_scaled, diff_genes, order = "rev", origin = "RO", title = "Differentiated Cell Types")
 
 
 make_box_avgzscore_sideByside(undiff_mat_scaled, undiff_genes, order = "", origin = "Undifferentiated", title = "Stem-Progenitor Cell Types")
@@ -117,8 +115,18 @@ make_box_avgzscore_sideByside(RO_mat_scaled, undiff_genes, order = "", origin = 
 make_box_avgzscore_sideByside(undiff_mat_scaled, diff_genes, order = "", origin = "Undifferentiated", title = "Differentiated Cell Types")
 make_box_avgzscore_sideByside(RO_mat_scaled, diff_genes, order = "", origin = "RO", title = "Differentiated Cell Types")
 
+R2 <- all[,grepl("R2", colnames(all))]
+R2 <- t(t(R2 / colSums(R2))) * 1e6
+R2_log <- log10(R2 +1)
+make_heatmap_undiffAndROCounts(R2_log, undiff_genes, stat = "log counts", title = "Stem-Progenitor Cell Types")
+make_heatmap_undiffAndROCounts(R2_log, diff_genes, stat = "log counts", title = "Differentiated Cell Types")
 
 
+H9 <- all[,grepl("H9", colnames(all))]
+R2 <- t(t(R2 / colSums(R2))) * 1e6
+R2_log <- log10(R2 +1)
+make_heatmap_undiffAndROCounts(R2_log, undiff_genes, stat = "log counts", title = "Stem-Progenitor Cell Types")
+make_heatmap_undiffAndROCounts(R2_log, diff_genes, stat = "log counts", title = "Differentiated Cell Types")
 
 
 
