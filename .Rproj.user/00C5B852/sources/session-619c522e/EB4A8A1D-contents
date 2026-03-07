@@ -1,9 +1,0 @@
-undiff <- read.delim("Counts/RO_counts_undifferentiated_gene_symbol.csv", sep=",")
-rownames(undiff) <- undiff$X
-undiff$X <- NULL
-
-diff <- read.delim("Counts/RO_counts_gene_symbol.csv", sep=",")
-rownames(diff) <- diff$X
-diff$X <- NULL
-
-head(cbind(undiff,diff))

@@ -78,7 +78,7 @@ make_heatmap <- function(mat_scaled, rlog, genes, origin = "", title=""){
   ht_combined_rlog <- Heatmap(
     combined_rlog,
     name = 'rlog2',
-    col = colorRamp2(c(-4, 0, 4), c("blue", "lightgrey", "red")),
+    # col = colorRamp2(c(-4, 0, 4), c("blue", "white", "red")),
     column_labels = c(paste("E8", origin), paste("L3i", origin)),
     show_row_names = TRUE, 
     show_column_names = TRUE, 
@@ -103,11 +103,11 @@ make_heatmap <- function(mat_scaled, rlog, genes, origin = "", title=""){
   return(list(ht_combined = ht_combined, ht_combined_rlog = ht_combined_rlog))
 }
 
-#' Generate Paired Z-Score and Rlog Heatmaps for Gene Sets
+#' Generate Paired Heatmaps for Gene Sets
 #'
 #' @param mat_scaled Numeric matrix of z-scored expression values of L3i vs E8.
-#' @param rlog Numeric matrix of rlog-transformed expression values
 #' @param genes Named list of character vectors
+#' @param stat_type name of the statistic in matrix
 #' @param title Character string for the heatmap column title (default: \code{""}).
 #'
 #' @return A list with two elements:
@@ -116,7 +116,7 @@ make_heatmap <- function(mat_scaled, rlog, genes, origin = "", title=""){
 #'     \item{$ht_combined_rlog} per-sample rlog values E8 and L3i.
 #'   }
 #'
-make_heatmap_undiffAndROCounts <- function(mat_scaled, genes, stat = "", title = "") {
+make_heatmap_undiffAndROCounts <- function(mat_scaled, genes, stat_type = "", title = "") {
   all_gene_sets <- list()
   slice_labels <- c()
   celltypes <- names(genes)
@@ -148,7 +148,8 @@ make_heatmap_undiffAndROCounts <- function(mat_scaled, genes, stat = "", title =
   
   ht_combined <- Heatmap(
     combined_mat,
-    name = stat,
+    name = stat_type,
+    # col = colorRamp2(c(min(combined_mat), max(combined_mat)), c("white", "red")),
     column_labels = c("E8", "L3i", "E8_RO", "L3i_RO"),
     show_row_names = TRUE,
     show_column_names = TRUE,
@@ -168,6 +169,75 @@ make_heatmap_undiffAndROCounts <- function(mat_scaled, genes, stat = "", title =
   return(ht_combined)
 }
 
+#' Generate Paired boxplots for Gene Sets
+#'
+#' @param mat_scaled Numeric matrix of z-scored expression values of L3i vs E8.
+#' @param genes Named list of character vectors
+#' @param title Character string for the heatmap column title (default: \code{""}).
+#'
+#' @return A list with two elements:
+#'   \describe{
+#'     \item{$ht_combined}mean E8 and mean L3i z-scores per gene.
+#'     \item{$ht_combined_rlog} per-sample rlog values E8 and L3i.
+#'   }
+#'
+make_boxplot_undiffAndROCounts <- function(mat_scaled, genes, stat_type = "", title = "") {
+  celltypes <- names(genes)
+  all_gene_sets <- list()
+  slice_labels <- c()
+  
+  for (i in seq_along(celltypes)) {
+    celltype <- celltypes[i]
+    gene_set <- genes[[i]]
+    sub <- mat_scaled[rownames(mat_scaled) %in% gene_set, , drop = FALSE]
+    if (nrow(sub) == 0) next
+    
+    E8_cols     <- grepl("_E8", colnames(sub)) & !grepl("RO", colnames(sub))
+    L3i_cols    <- grepl("_L3i", colnames(sub)) & !grepl("RO", colnames(sub))
+    E8_RO_cols  <- grepl("_E8", colnames(sub)) & grepl("RO", colnames(sub))
+    L3i_RO_cols <- grepl("_L3i", colnames(sub)) & grepl("RO", colnames(sub))
+    
+    heatmap_mat <- cbind(
+      E8       = rowMeans(sub[, E8_cols, drop = FALSE]),
+      L3i      = rowMeans(sub[, L3i_cols, drop = FALSE]),
+      E8_RO    = rowMeans(sub[, E8_RO_cols, drop = FALSE]),
+      L3i_RO   = rowMeans(sub[, L3i_RO_cols, drop = FALSE])
+    )
+    
+    all_gene_sets[[i]] <- heatmap_mat
+    slice_labels <- c(slice_labels, rep(celltype, nrow(heatmap_mat)))
+  }
+  
+  combined_mat <- do.call(rbind, all_gene_sets)
+  
+  # Reshape to long format
+  boxplot_df <- data.frame(
+    gene = rep(rownames(combined_mat), 4),
+    value = c(combined_mat[, "E8"], combined_mat[, "L3i"], combined_mat[, "E8_RO"], combined_mat[, "L3i_RO"]),
+    condition = rep(c("E8", "L3i", "E8_RO", "L3i_RO"), each = nrow(combined_mat)),
+    celltype = rep(slice_labels, 4)
+  )
+  
+  boxplot_df$celltype <- factor(boxplot_df$celltype, levels = celltypes)
+  boxplot_df$condition <- factor(boxplot_df$condition, levels = c("E8", "L3i", "E8_RO", "L3i_RO"))
+  
+  ggplot(boxplot_df, aes(x = condition, y = value, fill = condition)) +
+    geom_boxplot(alpha = 0.5, outlier.shape = NA) +
+    geom_jitter(width = 0.15, size = 1.5) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
+    facet_wrap(~ celltype, nrow = 1, strip.position = "bottom") +
+    scale_fill_manual(values = c("E8" = "blue", "L3i" = "red", "E8_RO" = "lightblue", "L3i_RO" = "salmon")) +
+    labs(x = NULL, y = stat_type, fill = "Condition", title = title) +
+    theme_bw() +
+    removeGrid() +
+    theme(
+      strip.text = element_text(size = 10, face = "bold", angle = 90, hjust = 1),
+      strip.placement = "outside",
+      strip.background = element_blank(),
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank()
+    )
+}
 
 #' Boxpslot of Z-Scores by Cell Type and Condition, Grouped by Cell Line
 #'
@@ -177,7 +247,7 @@ make_heatmap_undiffAndROCounts <- function(mat_scaled, genes, stat = "", title =
 #' @param title Character string for the plot title (default: `""`).
 #'
 #' @return A ggplot object. Faceted boxplots (one per cell type) with jittered points shaped by cell line.
-make_box_celllinezscore <- function(mat_scaled, genes, order = "", origin = "", title = "") {
+make_box_cellline <- function(mat_scaled, genes, stat_type="", order = "", origin = "", title = "") {
   cellline <- sub("_(E8|L3i)", "", colnames(mat_scaled))
   condition <- sub(".*_(E8|L3i).*", "\\1", colnames(mat_scaled))
   
@@ -189,12 +259,16 @@ make_box_celllinezscore <- function(mat_scaled, genes, order = "", origin = "", 
     gene_set <- genes[[i]]
     if (length(gene_set) == 0) next
     sub <- mat_scaled[rownames(mat_scaled) %in% gene_set, , drop = FALSE]
+    missing <- gene_set[!gene_set %in% rownames(mat_scaled)]
+    if (length(missing) > 0) {
+      message("Missing genes in ", celltype, ": ", paste(missing, collapse = ", "))
+    }
     
     for (g in rownames(sub)) {
       for (j in seq_len(ncol(sub))) {
         boxplot_df_list[[length(boxplot_df_list) + 1]] <- data.frame(
           gene = g,
-          zscore = sub[g, j],
+          stat = sub[g, j],
           condition = condition[j],
           cellline = cellline[j],
           celltype = celltype
@@ -207,7 +281,7 @@ make_box_celllinezscore <- function(mat_scaled, genes, order = "", origin = "", 
   # # Calculate mean difference per celltype
   celltype_order <- boxplot_df %>%
     group_by(celltype) %>%
-    summarize(diff = mean(zscore[condition == "L3i"]) - mean(zscore[condition == "E8"])) %>%
+    summarize(diff = mean(stat[condition == "L3i"]) - mean(stat[condition == "E8"])) %>%
     arrange(desc(diff)) %>%
     pull(celltype)
 
@@ -225,7 +299,7 @@ make_box_celllinezscore <- function(mat_scaled, genes, order = "", origin = "", 
   boxplot_df$celltype <- factor(boxplot_df$celltype, levels = celltype_order)
   boxplot_df$condition <- factor(boxplot_df$condition, levels = c("E8", "L3i"))
   
-  ggplot(boxplot_df, aes(x = condition, y = zscore, fill = condition)) +
+  ggplot(boxplot_df, aes(x = condition, y = stat, fill = condition)) +
     geom_boxplot(alpha = 0.5) +
     geom_jitter(aes(shape = cellline), width = 0.15, size = 2) +
     geom_signif(
@@ -239,7 +313,7 @@ make_box_celllinezscore <- function(mat_scaled, genes, order = "", origin = "", 
     scale_fill_manual(values = c("E8" = "blue", "L3i" = "red"),
                       labels = c("E8" = paste("E8", origin), "L3i" = paste("L3i", origin))) +
     scale_shape_manual(values = c(16, 17, 15)) +
-    labs(x = NULL, y = "z-score", shape = "Cell Line",
+    labs(x = NULL, y = stat_type, shape = "Cell Line",
          fill = "Cell Type", title = title) +
     theme_bw() +
     removeGrid() +
@@ -254,16 +328,16 @@ make_box_celllinezscore <- function(mat_scaled, genes, order = "", origin = "", 
 
 
 
-#' Boxplot of Mean L3i Z-Scores per Gene Across Cell Types
+#' Boxplot of Mean L3i stats per Gene Across Cell Types
 #'
-#' @param mat_scaled Numeric matrix of z-scored expression values. Columns must contain `_E8` or `_L3i`.
+#' @param mat_scaled Numeric matrix of expression values. Columns must contain `_E8` or `_L3i`.
 #' @param genes Named list of character vectors. Names = cell type labels, values = gene symbols.
-#' @param order `"fwd"` (default) sorts cell types by descending mean z-score; `"rev"` reverses.
+#' @param order `"fwd"` (default) sorts cell types by descending mean; `"rev"` reverses.
 #' @param origin the tissue of origin, 'Undifferentiated' or 'RO'
 #' @param title Character string for the plot title (default: `""`).
 #'
-#' @return A ggplot object. One boxplot per cell type showing the mean L3i z-scores for each gene.
-make_box_avgzscore <- function(mat_scaled, genes, order = "", origin = "", title = "") {
+#' @return A ggplot object. One boxplot per cell type showing the mean L3i for each gene.
+make_box_avg <- function(mat_scaled, genes, stat_type = "", order = "", origin = "", title = "") {
   cellline <- sub("_(E8|L3i)", "", colnames(mat_scaled))
   condition <- sub(".*_(E8|L3i).*", "\\1", colnames(mat_scaled))
   celltypes <- names(genes)
@@ -277,7 +351,7 @@ make_box_avgzscore <- function(mat_scaled, genes, order = "", origin = "", title
     for (g in rownames(sub)) {
       boxplot_df_list[[length(boxplot_df_list) + 1]] <- data.frame(
         gene = g,
-        zscore = mean(sub[g, L3i_cols]),
+        stat = mean(sub[g, L3i_cols]),
         celltype = celltype
       )
     }
@@ -285,7 +359,7 @@ make_box_avgzscore <- function(mat_scaled, genes, order = "", origin = "", title
   boxplot_df <- do.call(rbind, boxplot_df_list)
   celltype_order <- boxplot_df %>%
     group_by(celltype) %>%
-    summarize(mean_z = mean(zscore)) %>%
+    summarize(mean_z = mean(stat)) %>%
     arrange(desc(mean_z)) %>%
     pull(celltype)
   if (order == 'fwd') {
@@ -296,11 +370,11 @@ make_box_avgzscore <- function(mat_scaled, genes, order = "", origin = "", title
     celltype_order <- names(genes)
   }
   boxplot_df$celltype <- factor(boxplot_df$celltype, levels = celltype_order)
-  ggplot(boxplot_df, aes(x = celltype, y = zscore, fill = celltype)) +
+  ggplot(boxplot_df, aes(x = celltype, y = stat, fill = celltype)) +
     geom_boxplot(alpha = 0.5, outlier.shape = NA) +
     geom_jitter(width = 0.15, size = 2) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-    labs(x = NULL, y = paste0("Mean Z-Score (L3i", origin, ")"), title = title) +
+    labs(x = NULL, y = paste0("Mean ", stat_type, " (L3i", origin, ")"), title = title) +
     theme_bw() +
     removeGrid() +
     theme(
@@ -309,7 +383,7 @@ make_box_avgzscore <- function(mat_scaled, genes, order = "", origin = "", title
     )
 }
 
-#' Boxplot of Mean L3i AND E8 Z-Scores per Gene Across Cell Types
+#' Boxplot of Mean L3i AND E8 per Gene Across Cell Types
 #'
 #' @param mat_scaled Numeric matrix of z-scored expression values. Columns must contain `_E8` or `_L3i`.
 #' @param genes Named list of character vectors. Names = cell type labels, values = gene symbols.
@@ -318,7 +392,7 @@ make_box_avgzscore <- function(mat_scaled, genes, order = "", origin = "", title
 #' @param title Character string for the plot title (default: `""`).
 #'
 #' @return A ggplot object. 2 boxplots per cell type showing the mean L3i AND E8 z-scores for each gene.
-make_box_avgzscore_sideByside <- function(mat_scaled, genes, order = "", origin = "", title = "") {
+make_box_avg_sideByside <- function(mat_scaled, genes, stat_type ="", order = "", origin = "", title = "") {
   cellline <- sub("_(E8|L3i)", "", colnames(mat_scaled))
   condition <- sub(".*_(E8|L3i).*", "\\1", colnames(mat_scaled))
   
@@ -337,13 +411,13 @@ make_box_avgzscore_sideByside <- function(mat_scaled, genes, order = "", origin 
     for (g in rownames(sub)) {
       boxplot_df_list[[length(boxplot_df_list) + 1]] <- data.frame(
         gene = g,
-        zscore = mean(sub[g, L3i_cols]),
+        stat = mean(sub[g, L3i_cols]),
         condition = "L3i",
         celltype = celltype
       )
       boxplot_df_list[[length(boxplot_df_list) + 1]] <- data.frame(
         gene = g,
-        zscore = mean(sub[g, E8_cols]),
+        stat = mean(sub[g, E8_cols]),
         condition = "E8",
         celltype = celltype
       )
@@ -355,7 +429,7 @@ make_box_avgzscore_sideByside <- function(mat_scaled, genes, order = "", origin 
   celltype_order <- boxplot_df %>%
     filter(condition == "L3i") %>%
     group_by(celltype) %>%
-    summarize(mean_z = mean(zscore)) %>%
+    summarize(mean_z = mean(stat)) %>%
     arrange(desc(mean_z)) %>%
     pull(celltype)
   if (order == 'fwd'){
@@ -370,7 +444,7 @@ make_box_avgzscore_sideByside <- function(mat_scaled, genes, order = "", origin 
   boxplot_df$celltype <- factor(boxplot_df$celltype, levels = celltype_order)
   boxplot_df$condition <- factor(boxplot_df$condition, levels = c("E8", "L3i"))
   
-  ggplot(boxplot_df, aes(x = condition, y = zscore, fill = condition)) +
+  ggplot(boxplot_df, aes(x = condition, y = stat, fill = condition)) +
     geom_boxplot(alpha = 0.5, outlier.shape = NA) +
     geom_jitter(width = 0.15, size = 2) +
     geom_signif(
@@ -384,7 +458,7 @@ make_box_avgzscore_sideByside <- function(mat_scaled, genes, order = "", origin 
     facet_wrap(~ celltype, nrow = 1, strip.position = "bottom") +
     scale_fill_manual(values = c("E8" = "blue", "L3i" = "red"),
                       labels = c("E8" = paste("E8", origin), "L3i" = paste("L3i", origin))) +
-    labs(x = NULL, y = "Mean Z-Score", fill = "Condition", title = title) +
+    labs(x = NULL, y = paste("Mean", stat_type), fill = "Condition", title = title) +
     theme_bw() +
     removeGrid() +
     theme(
@@ -396,67 +470,79 @@ make_box_avgzscore_sideByside <- function(mat_scaled, genes, order = "", origin 
     )
 }
 
-#' Boxplot of Log2 Fold Changes (L3i/E8) by Cell Type
+
+#' Boxplot using normalized count matrix NOT FROM DESEQ2
+#' 
+#'@param mat normalized matrix
+#'@param genes
+#'@param order
+#'@param origin
+#'@param title
 #'
-#' @param res DESeq2 results table (or data frame) with rownames as gene symbols and a `log2FoldChange` column.
-#' @param genes Named list of character vectors. Names = cell type labels, values = gene symbols.
-#' @param order `"fwd"` (default) sorts cell types by descending mean log2FC; `"rev"` reverses.
-#' @param title Character string for the plot title (default: `""`).
-#'
-#' @return A list with two elements:
-#'   \describe{
-#'     \item{$df}{Data frame with columns: gene, log2FC, celltype.}
-#'     \item{$plot}{A ggplot object. One boxplot per cell type with jittered gene-level points.}
-#'   }
-make_box_rlog <- function(res, genes, order = "", title = "") {
+#'@return boxplot
+
+make_box_normCounts <- function(mat, genes, order = "", stat_type = "", origin = "", title = "") {
   celltypes <- names(genes)
   boxplot_df_list <- list()
   
   for (i in seq_along(celltypes)) {
     gene_set <- genes[[i]]
-    gene_set <- gene_set[gene_set %in% rownames(res)]
-    if (length(gene_set) == 0) next
+    sub <- mat[rownames(mat) %in% gene_set, , drop = FALSE]
+    if (nrow(sub) == 0) next
     
-    boxplot_df_list[[i]] <- data.frame(
-      gene = gene_set,
-      log2FC = res[gene_set, "log2FoldChange"],
+    E8_mean  <- rowMeans(sub[, grepl("E8", colnames(sub)), drop = FALSE])
+    L3i_mean <- rowMeans(sub[, grepl("L3i", colnames(sub)), drop = FALSE])
+    
+    log2FC <- log10((L3i_mean + 1) / (E8_mean + 1))
+    
+    boxplot_df_list[[length(boxplot_df_list) + 1]] <- data.frame(
+      gene = names(log2FC),
+      log2FC = log2FC,
+      condition = "L3i",
+      celltype = celltypes[i]
+    )
+    boxplot_df_list[[length(boxplot_df_list) + 1]] <- data.frame(
+      gene = names(log2FC),
+      log2FC = -log2FC,
+      condition = "E8",
       celltype = celltypes[i]
     )
   }
-  
   boxplot_df <- do.call(rbind, boxplot_df_list)
   
-  # Order celltypes by mean log2FC
   celltype_order <- boxplot_df %>%
+    filter(condition == "L3i") %>%
     group_by(celltype) %>%
-    summarize(diff = mean(log2FC)) %>%
-    arrange(desc(diff)) %>%
+    summarize(mean_fc = mean(log2FC)) %>%
+    arrange(desc(mean_fc)) %>%
     pull(celltype)
-
-  if (order == 'fwd'){
-    celltype_order <- celltype_order
-  }
-  else if (order == "rev") {
-    celltype_order <- rev(celltype_order)
-  }
-  else
-    celltype_order <- names(genes)
   
+  if (order == "fwd") {
+    celltype_order <- celltype_order
+  } else if (order == "rev") {
+    celltype_order <- rev(celltype_order)
+  } else {
+    celltype_order <- names(genes)
+  }
   
   boxplot_df$celltype <- factor(boxplot_df$celltype, levels = celltype_order)
+  boxplot_df$condition <- factor(boxplot_df$condition, levels = c("E8", "L3i"))
   
-  p <- ggplot(boxplot_df, aes(x = celltype, y = log2FC, fill = celltype)) +
-    geom_boxplot(alpha = 0.5) +
+  ggplot(boxplot_df, aes(x = condition, y = log2FC, fill = condition)) +
+    geom_boxplot(alpha = 0.5, outlier.shape = NA) +
     geom_jitter(width = 0.15, size = 2) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey50") +
-    labs( y = "rlog2 (L3i/E8)", x = NULL, title = title) +
+    facet_wrap(~ celltype, nrow = 1, strip.position = "bottom") +
+    scale_fill_manual(values = c("E8" = "blue", "L3i" = "red"),
+                      labels = c("E8" = paste("E8", origin), "L3i" = paste("L3i", origin))) +
+    labs(x = NULL, y = "log2FC", fill = "Condition", title = title) +
     theme_bw() +
     removeGrid() +
     theme(
-      strip.text = element_text(size = 12, face = "bold"),
-      axis.text.x = element_text(angle = 45, hjust = 1),
-      legend.position = "none"
+      strip.text = element_text(size = 10, face = "bold", angle = 90, hjust = 1),
+      strip.placement = "outside",
+      strip.background = element_blank(),
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank()
     )
-  
-  return(list(df = boxplot_df, plot = p))
 }
