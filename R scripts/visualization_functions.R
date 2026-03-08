@@ -458,7 +458,7 @@ make_box_avg_sideByside <- function(mat_scaled, genes, stat_type ="", order = ""
     facet_wrap(~ celltype, nrow = 1, strip.position = "bottom") +
     scale_fill_manual(values = c("E8" = "blue", "L3i" = "red"),
                       labels = c("E8" = paste("E8", origin), "L3i" = paste("L3i", origin))) +
-    labs(x = NULL, y = paste("Mean", stat_type), fill = "Condition", title = title) +
+    labs(x = NULL, y = stat_type, fill = "Condition", title = title) +
     theme_bw() +
     removeGrid() +
     theme(

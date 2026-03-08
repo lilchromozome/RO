@@ -6,54 +6,22 @@ library(org.Hs.eg.db)
 library(AnnotationDbi)
 library(patchwork)
 library(ggExtra)
-# setwd("C:/Users/willllllli/Documents/Dr. Z lab/RNA seq/RO") # Windows
-setwd("~/Documents/Zambidis lab/RNAseq/RO") # MAC
+setwd("C:/Users/willllllli/Documents/Dr. Z lab/RNA seq/RO") # Windows
+# setwd("~/Documents/Zambidis lab/RNAseq/RO") # MAC
 
-RO_full <- read.table("Counts/count.out",
-                     header = T,
-                     sep = "\t",
-                     comment.char = "#",
-                     stringsAsFactors = F)
+RO <- read.delim("Counts/RO_counts_gene_symbol.csv", sep=",")
+rownames(RO) <- RO$X
+RO$X <- NULL
+colnames(RO) <- c("H9_E8_r1_RO", "H9_E8_r2_RO", "H9_L3i_r1_RO",  "H9_L3i_r2_RO", "RUES02_E8_RO", "RUES02_L3i_RO")
+RO <- RO[, c("H9_E8_r1_RO", "H9_E8_r2_RO", "RUES02_E8_RO", "H9_L3i_r1_RO",  "H9_L3i_r2_RO",  "RUES02_L3i_RO")]
 
-RO_counts <- RO_full[, 7:ncol(RO_full)]
-rownames(RO_counts) <- RO_full$Geneid
-colnames(RO_counts) = c("H9_r1_E8", "H9_r2_E8",  "H9_r1_L3i", "H9_r2_L3i",
-                            "RUES02_E8", "RUES02_L3i")
-RO_counts <- RO_counts[, c("H9_r1_E8", "H9_r2_E8", "RUES02_E8", "H9_r1_L3i", "H9_r2_L3i", "RUES02_L3i")]
-featureLength <- RO_full$Length
+dorgau_progenitor_genes <- read.csv("dorgau_progenitor.csv")
+liu_progenitor_genes <- read.csv("Liu_progenitor.csv")
+diff_genes <- read.csv("dorgau_diff.csv")
 
-ens <- rownames(RO_counts)
-symbols <- mapIds(org.Hs.eg.db,
-                  keys = ens,
-                  keytype = "ENSEMBL",
-                  column = "SYMBOL",
-                  multiVals = "first")
-RO_counts$gene_symbol <- symbols
-rownames(RO_counts) <- make.unique(ifelse(is.na(symbols), ens, symbols))
-RO_counts$gene_symbol <- NULL
 
-undiff_genes <- read.csv("undiff_dorgau.csv")
-diff_genes <- read.csv("diff_dorgau.csv")
-
-diff_cell_types <- unique(gsub("\\.(Liu|Dorgau)$", "", names(diff_genes)))
-
-diff_genes_list <- lapply(diff_cell_types, function(ct) {
-  matching_cols <- grep(paste0("^", ct, "\\.(Liu|Dorgau)$"), names(diff_genes), value = TRUE)
-  unique(na.omit(unlist(diff_genes[matching_cols])))
-})
-
-names(diff_genes_list) <- diff_cell_types
-max_len <- max(sapply(diff_genes_list, length))
-
-diff_genes_df <- as.data.frame(
-  lapply(diff_genes_list, function(x) {
-    length(x) <- max_len  # pad with NA
-    x
-  })
-)
-
-# Differential expression ----------------------------------
-samples <- colnames(RO_counts)
+## RO differential expression -------------------------
+samples <- colnames(RO)
 cellline <- sub("_(E8|L3i)", "", samples)
 condition <- sub(".*_(E8|L3i).*", "\\1", samples)
 coldata <- data.frame(
@@ -61,35 +29,47 @@ coldata <- data.frame(
   condition = factor(condition, levels = c("E8", "L3i")),
   row.names = samples
 )
-all(colnames(RO_counts) == rownames(coldata))
-dds <-DESeqDataSetFromMatrix(
-  countData = RO_counts,
+all(colnames(RO) == rownames(coldata))
+dds_RO <-DESeqDataSetFromMatrix(
+  countData = RO,
   colData = coldata,
   design = ~ cellline + condition
 )
-dds <- dds[rowSums(counts(dds)) > 10, ]
-dds <- DESeq(dds)
-res <- results(dds, contrast = c("condition", "L3i", "E8"))
+dds_RO <- dds_RO[rowSums(counts(dds_RO)) > 10, ]
+dds_RO_deseq <- DESeq(dds_RO)
+RO_res <- results(dds_RO_deseq, contrast = c("condition", "L3i", "E8"))
 
 # rlog2
-rlog <- cbind(
-  E8 = -res$log2FoldChange,
-  L3i = res$log2FoldChange
+RO_log2FC <- cbind(
+  E8 = -RO_res$log2FoldChange,
+  L3i = RO_res$log2FoldChange
 )
-rownames(rlog) <- rownames(res)
+rownames(RO_log2FC) <- rownames(RO_res)
 
+rlog_counts_RO <- rlog(dds_RO_deseq)
+rlog_mat <- assay(rlog_counts_RO)
+rlog_mat <- rlog_mat - rowMeans(rlog_mat)
+rlog_var <- apply(rlog_mat, 1, var)
+rlog_mat <- rlog_mat[names(rlog_var > 0), ]
+rlog_mat_RO <- t(scale(t(rlog_mat)))
+RO_rlog <- data.frame(
+  E8  = rowMeans(rlog_mat_RO[, grepl("E8", colnames(rlog_mat_RO))]),
+  L3i = rowMeans(rlog_mat_RO[, grepl("L3i", colnames(rlog_mat_RO))])
+)
+# Z-score 
+RO_mat <- counts(dds_RO_deseq, normalized = TRUE)
+RO_mat_scaled <- t(scale(t(RO_mat)))
+RO_mat_scaled <- RO_mat_scaled[complete.cases(RO_mat_scaled), , drop = FALSE]
 
-## Z-score --------------------------------
-mat <- counts(dds, normalized = TRUE)
-mat_scaled <- t(scale(t(mat)))
-mat_scaled <- mat_scaled[complete.cases(mat_scaled), , drop = FALSE]
-
-# Heatmap plotting --------------------------------------
+# Plotting --------------------------------------
 source("R scripts/visualization_functions.R")
-result_undiff <- make_heatmap(mat_scaled, rlog, undiff_genes, "Undifferentiated Cell Types")
-undiff_ht <- result_undiff$ht_combined
-undiff_ht_rlog <- result_undiff$ht_combined_rlog
+make_heatmap(RO_mat_scaled, RO_rlog, dorgau_progenitor_genes, origin = "RO", title="Stem-Progenitor Cell Types Dorgau")
+make_heatmap(RO_mat_scaled, RO_rlog, liu_progenitor_genes, origin = "RO", title="Stem-Progenitor Cell Types Liu")
+make_heatmap(RO_mat_scaled, RO_rlog, diff_genes, origin = "RO", title="Differentiated Cell Types")
 
-result_diff <- make_heatmap(mat_scaled, rlog, diff_genes, "Differentiated Cell Types")
-diff_ht <- result_diff$ht_combined
-diff_ht_rlog <- result_diff$ht_combined_rlog
+make_box_avg_sideByside(RO_rlog, dorgau_progenitor_genes, order = "", 
+                        stat_type = 'rlog2', origin = "RO", title = "Stem-Progenitor Cell Types Dorgau")
+make_box_avg_sideByside(RO_rlog, liu_progenitor_genes, order = "", 
+                        stat_type = 'rlog2', origin = "RO", title = "Stem-Progenitor Cell Types Liu")
+make_box_avg_sideByside(RO_rlog, diff_genes, order = "", 
+                        stat_type = 'rlog2', origin = "RO", title = "Differentiated Cell Types")

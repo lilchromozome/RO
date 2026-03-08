@@ -152,11 +152,6 @@ all_mat_scaled <- all_mat_scaled[complete.cases(all_mat_scaled), , drop = FALSE]
 
 ## Visualizations ----------------------------------
 source('R scripts/visualization_functions.R')
-R2 <- undiff[,grepl("RUES02", colnames(undiff))]
-cpm <- R2 / colSums(R2) * 1e6
-make_box_normCounts(cpm, undiff_genes, origin = "undifferentiated")
-
-
 
 make_heatmap(undiff_mat_scaled, undiff_rlog, undiff_genes, 
              origin = "Undifferentiated", title="Stem-Progenitor Cell Types")
