@@ -96,10 +96,6 @@ make_heatmap <- function(mat_scaled, rlog, genes, origin = "", title=""){
     column_title_gp = gpar(fontsize = 16, fontface = "bold"),
   ) 
   
-  draw(ht_combined,
-       show_heatmap_legend = T)
-  draw(ht_combined_rlog,
-       show_heatmap_legend = T)
   return(list(ht_combined = ht_combined, ht_combined_rlog = ht_combined_rlog))
 }
 

@@ -17,7 +17,8 @@ RO <- RO[, c("H9_E8_r1_RO", "H9_E8_r2_RO", "RUES02_E8_RO", "H9_L3i_r1_RO",  "H9_
 
 dorgau_progenitor_genes <- read.csv("dorgau_progenitor.csv")
 liu_progenitor_genes <- read.csv("Liu_progenitor.csv")
-diff_genes <- read.csv("dorgau_diff.csv")
+diff_dorgau <- read.csv("dorgau_diff.csv")
+diff_liu <- read.csv("Liu_diff.csv")
 
 
 ## RO differential expression -------------------------
@@ -65,11 +66,14 @@ RO_mat_scaled <- RO_mat_scaled[complete.cases(RO_mat_scaled), , drop = FALSE]
 source("R scripts/visualization_functions.R")
 make_heatmap(RO_mat_scaled, RO_rlog, dorgau_progenitor_genes, origin = "RO", title="Stem-Progenitor Cell Types Dorgau")
 make_heatmap(RO_mat_scaled, RO_rlog, liu_progenitor_genes, origin = "RO", title="Stem-Progenitor Cell Types Liu")
-make_heatmap(RO_mat_scaled, RO_rlog, diff_genes, origin = "RO", title="Differentiated Cell Types")
+make_heatmap(RO_mat_scaled, RO_rlog, diff_dorgau, origin = "RO", title="Differentiated Cell Types Dorgau")
+make_heatmap(RO_mat_scaled, RO_rlog, diff_liu, origin = "RO", title="Differentiated Cell Types Liu")
 
 make_box_avg_sideByside(RO_rlog, dorgau_progenitor_genes, order = "", 
                         stat_type = 'rlog2', origin = "RO", title = "Stem-Progenitor Cell Types Dorgau")
 make_box_avg_sideByside(RO_rlog, liu_progenitor_genes, order = "", 
                         stat_type = 'rlog2', origin = "RO", title = "Stem-Progenitor Cell Types Liu")
-make_box_avg_sideByside(RO_rlog, diff_genes, order = "", 
-                        stat_type = 'rlog2', origin = "RO", title = "Differentiated Cell Types")
+make_box_avg_sideByside(RO_rlog, diff_dorgau, order = "", 
+                        stat_type = 'rlog2', origin = "RO", title = "Differentiated Cell Types Dorgau")
+make_box_avg_sideByside(RO_rlog, diff_liu, order = "", 
+                        stat_type = 'rlog2', origin = "RO", title = "Differentiated Cell Types Liu")
